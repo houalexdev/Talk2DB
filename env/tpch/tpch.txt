@@ -1,0 +1,98 @@
+# 数据库类型：MySQL
+## 表：region（区域表）
+* 区域主键 -> r_regionkey
+* 区域名称 -> r_name
+* 区域备注 -> r_comment
+
+----
+
+# 数据库类型：MySQL
+## 表：nation（国家表）
+* 国家主键 -> n_nationkey
+* 国家名称 -> n_name
+* 区域主键（外键） -> n_regionkey
+* 国家备注 -> n_comment
+
+----
+
+# 数据库类型：MySQL
+## 表：customer（客户表）
+* 客户主键 -> c_custkey
+* 客户名称 -> c_name
+* 客户地址 -> c_address
+* 国家主键（外键） -> c_nationkey
+* 客户电话号码 -> c_phone
+* 账户余额 -> c_acctbal
+* 市场细分 -> c_mktsegment
+* 客户备注 -> c_comment
+
+----
+
+# 数据库类型：MySQL
+## 表：supplier（供应商表）
+* 供应商主键 -> s_suppkey
+* 供应商名称 -> s_name
+* 供应商地址 -> s_address
+* 国家主键（外键） -> s_nationkey
+* 供应商电话号码 -> s_phone
+* 账户余额 -> s_acctbal
+* 供应商备注 -> s_comment
+
+----
+
+# 数据库类型：MySQL
+## 表：orders（订单表）
+* 订单主键 -> o_orderkey
+* 客户主键（外键） -> o_custkey
+* 订单状态 -> o_orderstatus
+* 订单总金额 -> o_totalprice
+* 订单日期 -> o_orderdate
+* 订单优先级 -> o_orderpriority
+* 订单处理人员 -> o_clerk
+* 发货优先级 -> o_shippriority
+* 订单备注 -> o_comment
+
+----
+
+# 数据库类型：MySQL
+## 表：part（产品表）
+* 产品主键 -> p_partkey
+* 产品名称 -> p_name
+* 制造商 -> p_mfgr
+* 品牌 -> p_brand
+* 产品类型 -> p_type
+* 产品大小 -> p_size
+* 包装类型 -> p_container
+* 零售价格 -> p_retailprice
+* 产品备注 -> p_comment
+
+----
+
+# 数据库类型：MySQL
+## 表：lineitem（订单商品表）
+* 订单主键（外键） -> l_orderkey
+* 产品主键（外键） -> l_partkey
+* 供应商主键（外键） -> l_suppkey
+* 行号 -> l_linenumber
+* 数量 -> l_quantity
+* 扩展价格 -> l_extendedprice
+* 折扣 -> l_discount
+* 税费 -> l_tax
+* 退货标志 -> l_returnflag
+* 行状态 -> l_linestatus
+* 发货日期 -> l_shipdate
+* 提交日期 -> l_commitdate
+* 收货日期 -> l_receiptdate
+* 发货指令 -> l_shipinstruct
+* 发货方式 -> l_shipmode
+* 备注 -> l_comment
+
+----
+
+# 数据库类型：MySQL
+## 表：partsupp（产品供应商表）
+* 产品主键（外键） -> ps_partkey
+* 供应商主键（外键） -> ps_suppkey
+* 可用数量 -> ps_availqty
+* 供应成本 -> ps_supplycost
+* 备注 -> ps_comment

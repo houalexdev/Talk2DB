@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录</title>
+    <style>
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* 基础样式 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease;
+        }
+        
+        /* 深色模式样式 */
+        body.dark-mode {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        
+        body.dark-mode .login-container {
+            background-color: #1e293b;
+            border-color: #334155;
+        }
+        
+        /* 深色模式媒体查询 - 双重保障 */
+        @media (prefers-color-scheme: dark) {
+            body:not(.light-force) {
+                background-color: #0f172a;
+                color: #f8fafc;
+            }
+            
+            body:not(.light-force) .login-container {
+                background-color: #1e293b;
+                border-color: #334155;
+            }
+            
+            /* 深色模式下默认隐藏浅色logo */
+            body:not(.light-force) .logo.light {
+                display: none;
+            }
+            
+            /* 深色模式下默认显示深色logo */
+            body:not(.light-force) .logo.dark {
+                display: block;
+            }
+        }
+        
+        /* 登录容器样式 */
+        .login-container {
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            width: 400px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        /* Logo容器样式 - 确保居中 */
+        .logo-container {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* Logo样式 */
+        .logo {
+            max-width: 184px;
+            height: auto;
+            transition: transform 0.3s ease;
+            display: block; /* 确保图片是块级元素 */
+            margin: 0 auto; /* 额外的居中保障 */
+        }
+        
+        /* 默认显示浅色logo，隐藏深色logo */
+        .logo.dark {
+            display: none;
+        }
+        
+        .logo:hover {
+            transform: scale(1.05);
+        }
+        
+        /* 表单样式 */
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        /* 表单组样式 */
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+            width: 100%;
+        }
+        
+        /* 表单标签样式 */
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.95rem;
+            color: inherit;
+            text-align: left;
+        }
+        
+        /* 表单输入框样式 */
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            box-sizing: border-box;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* 深色模式下的表单样式 */
+        body.dark-mode .form-input,
+        body:not(.light-force) .form-input {
+            background-color: #1e293b;
+            border-color: #475569;
+            color: #f8fafc;
+        }
+        
+        body.dark-mode .form-input:focus,
+        body:not(.light-force) .form-input:focus {
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+        }
+        
+        /* 按钮样式 */
+        .login-button {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .login-button:hover {
+            background-color: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .login-button:active {
+            transform: translateY(0);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 1.5rem;
+                margin: 1rem;
+            }
+            
+            .logo {
+                max-width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录容器 -->
+    <div class="login-container">
+        <!-- Logo区域 -->
+        <div class="logo-container">
+            <!-- 浅色logo -->
+            <img class="logo light" src="/static/images/talk2db-logo.png" alt="Talk2DB Logo">
+            <!-- 深色logo -->
+            <img class="logo dark" src="/static/images/talk2db-logo-dark.png" alt="Talk2DB Logo (Dark Mode)">
+        </div>
+        
+        <!-- 登录表单 -->
+        {% if auth_type == 'config' %}
+        <!-- 用户名密码登录表单 -->
+        <form class="login-form" action="/auth/login" method="POST">
+            <div class="form-group">
+                <label for="username" class="form-label">用户名</label>
+                <input type="text" id="username" name="username" required class="form-input">
+            </div>
+            <div class="form-group">
+                <label for="password" class="form-label">密码</label>
+                <input type="password" id="password" name="password" required class="form-input">
+            </div>
+            {% if error %}
+                <div style="color: #ef4444; margin-bottom: 1rem;">{{ error }}</div>
+            {% endif %}
+            <button type="submit" class="login-button">登录</button>
+        </form>
+        {% else %}
+        <!-- 统一认证登录表单 -->
+        <form class="login-form" action="/auth/login" method="POST">
+            {% if error %}
+                <div style="color: #ef4444; margin-bottom: 1rem;">{{ error }}</div>
+            {% endif %}
+            <button type="submit" class="login-button">使用统一认证登录</button>
+        </form>
+        {% endif %}
+    </div>
+    
+    <script>
+        // JavaScript检测深色模式并应用相应类
+        function detectDarkMode() {
+            // 检查系统偏好
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (prefersDark) {
+                document.body.classList.add('dark-mode');
+                // 确保深色logo显示，浅色logo隐藏
+                const darkLogo = document.querySelector('.logo.dark');
+                const lightLogo = document.querySelector('.logo.light');
+                if (darkLogo) darkLogo.style.display = 'block';
+                if (lightLogo) lightLogo.style.display = 'none';
+            } else {
+                document.body.classList.remove('dark-mode');
+                // 确保浅色logo显示，深色logo隐藏
+                const darkLogo = document.querySelector('.logo.dark');
+                const lightLogo = document.querySelector('.logo.light');
+                if (darkLogo) darkLogo.style.display = 'none';
+                if (lightLogo) lightLogo.style.display = 'block';
+            }
+        }
+        
+        // 初始检测
+        detectDarkMode();
+        
+        // 监听深色模式变化
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', detectDarkMode);
+        }
+    </script>
+</body>
+</html>

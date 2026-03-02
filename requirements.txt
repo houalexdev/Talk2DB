@@ -1,0 +1,27 @@
+# Web框架
+flask==3.1.0
+flasgger==0.9.7.1
+flask-sock==0.7.0
+
+# 核心功能库
+vanna==0.7.9
+requests==2.32.3
+#vanna[chromadb,openai,ollama,qdrant]
+vanna[openai,ollama,qdrant]
+vanna[postgres,mysql,oracle,mssql]
+
+# 数据处理
+pandas==2.2.3
+numpy==2.2.2
+plotly==6.0.0
+dmPython==2.5.22
+
+# 认证相关
+requests-oauthlib==2.0.0
+
+# 工具库
+importlib_metadata==8.5.0
+python-dotenv==1.0.1
+
+# Windows不支持的库标记
+uvloop==0.21.0; platform_system != "Windows"

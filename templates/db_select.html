@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="./static/images/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="./static/fonts/roboto-slab/fonts.css" rel="stylesheet">
+    <script src="./static/assets/plotly-latest.min.js" type="text/javascript"></script>
+    <title>选择数据库</title>
+    <!--<script type="module" crossorigin src="./static/assets/index-35bab439.js"></script>-->
+    <script type="module" crossorigin src="./static/assets/index.js"></script>
+    <!--<link rel="stylesheet" href="./static/assets/index-f228f78f.css">-->
+    <link rel="stylesheet" href="./static/assets/index.css">
+    <style>
+        .db-card {
+            border: 1px solid #3b82f6;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+            display: none;
+        }
+        .db-card.active {
+            display: block;
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .db-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+        .db-info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .db-info-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+        .db-info-value {
+            font-size: 0.875rem;
+            color: #111827;
+            font-weight: 500;
+        }
+        .db-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 0.5rem;
+        }
+        .select-container {
+            margin-bottom: 1rem;
+            border: 1px solid #3b82f6;
+            border-radius: 0.5rem;
+        }
+        .credentials-container {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            border: 1px solid #3b82f6;
+            border-radius: 0.5rem;
+            background-color: #eff6ff;
+        }
+        .credentials-container.active {
+            display: block;
+        }
+        .credentials-input {
+            margin-bottom: 1rem;
+            border: 1px solid #3b82f6;
+            border-radius: 0.5rem;
+        }
+        .page-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        .logo-container {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .form-container {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        .title {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 2rem;
+        }
+        .error-message {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        .error-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-slate-900">
+  <div class="page-container">
+    <div class="logo-container">
+      <img class="block dark:hidden" height="41" width="184" src="./static/images/talk2db-logo.png">
+      <img class="hidden dark:block" height="41" width="184" src="./static/images/talk2db-logo-dark.png">
+    </div>
+
+    <div class="form-container">
+      <h1 class="title">选择数据库</h1>
+      
+      <!-- 新增错误消息显示区域 -->
+      <div id="error-message" class="error-message"></div>
+      
+      <form action="/select_db" method="post" id="dbForm">
+        <div class="grid gap-y-4">
+          <div>
+            <label for="db_select" class="block text-sm mb-2 dark:text-white">选择数据库</label>
+            <div class="select-container">
+              <select id="db_select" name="db_select" class="py-3 px-4 block w-full" required onchange="updateCardDisplay(this.value)">
+                <option value="">请选择数据库</option>
+                {% for db in db_configurations %}
+                <option value="{{ db.name }}">{{ db.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="space-y-3">
+              {% for db in db_configurations %}
+              <div class="db-card" id="card-{{ db.name }}">
+                <div class="db-name">{{ db.name }}</div>
+                <div class="db-info">
+                  <div class="db-info-item">
+                    <span class="db-info-label">类型</span>
+                    <span class="db-info-value">{{ db.type }}</span>
+                  </div>
+                  <div class="db-info-item">
+                    <span class="db-info-label">主机</span>
+                    <span class="db-info-value">{{ db.host }}</span>
+                  </div>
+                  <div class="db-info-item">
+                    <span class="db-info-label">端口</span>
+                    <span class="db-info-value">{{ db.port }}</span>
+                  </div>
+                  <div class="db-info-item">
+                    <span class="db-info-label">数据库</span>
+                    <span class="db-info-value">{{ db.database }}</span>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+
+            <div class="credentials-container" id="credentials-container">
+              <!--<div class="credentials-input">-->
+                <label for="username" class="db-name block text-sm mb-2">数据库用户名</label>
+                <input type="text" id="username" name="username" class="credentials-input py-3 px-4 block w-full border" required>
+              <!--</div>
+              <div class="credentials-input">-->
+                <label for="password" class="db-name block text-sm mb-2">数据库密码</label>
+                <input type="password" id="password" name="password" class="credentials-input py-3 px-4 block w-full border" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-4">
+            <button type="submit" class="flex-1 py-3 px-4 bg-blue-600 text-white hover:bg-blue-700 transition-colors">确认选择</button>
+            <a href="/auth/logout" class="flex-1 py-3 px-4 bg-gray-600 text-white hover:bg-gray-700 transition-colors text-center">退出</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function updateCardDisplay(dbName) {
+      // 隐藏所有卡片
+      document.querySelectorAll('.db-card').forEach(card => {
+        card.classList.remove('active');
+      });
+      
+      // 显示选中的卡片
+      if (dbName) {
+        const selectedCard = document.getElementById(`card-${dbName}`);
+        selectedCard.classList.add('active');
+        // 显示凭据输入框
+        document.getElementById('credentials-container').classList.add('active');
+      } else {
+        // 隐藏凭据输入框
+        document.getElementById('credentials-container').classList.remove('active');
+      }
+    }
+
+    // 页面加载时，如果有默认选中的数据库，显示对应的卡片
+    document.addEventListener('DOMContentLoaded', function() {
+      const select = document.getElementById('db_select');
+      if (select.value) {
+        updateCardDisplay(select.value);
+      }
+    });
+
+    // 表单提交前处理
+    document.getElementById('dbForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      // 隐藏之前的错误消息
+      const errorMessage = document.getElementById('error-message');
+      errorMessage.classList.remove('show');
+      
+      const dbName = document.getElementById('db_select').value;
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+  
+      // 创建 FormData 对象
+      const formData = new FormData();
+      formData.append('db_select', dbName);
+      formData.append('username', username);
+      formData.append('password', password);
+  
+      // 提交表单
+      fetch('/select_db', {
+        method: 'POST',
+        body: formData
+      }).then(response => {
+        if (response.ok) {
+          window.location.href = '/';
+        } else {
+          // 读取响应内容获取具体错误信息
+          return response.text().then(errorText => {
+            // 显示具体错误信息
+            errorMessage.textContent = `数据库连接失败: ${errorText}`;
+            errorMessage.classList.add('show');
+          });
+        }
+      }).catch(error => {
+        console.error('Error:', error);
+        // 显示网络或其他错误
+        errorMessage.textContent = `提交请求失败: ${error.message}`;
+        errorMessage.classList.add('show');
+      });
+    });
+  </script>
+</body>
+</html>

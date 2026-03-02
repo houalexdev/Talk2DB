@@ -1,0 +1,30 @@
+{
+  "global": {
+      "llm_type": "vllm",
+      "ollama_model": "qwen2.5-coder:32b",
+      "ollama_host": "http://192.168.0.1:11434",
+      "vllm_model": "./models/Qwen2.5-Coder-7B",
+      "vllm_host": "http://192.168.0.1:7000/v1",
+      "vllm_key": "vllm-key",
+      "path": "./env/global",
+      "vector_host": "localhost",
+      "users": [{"user": "admin", "password": "admin"}, {"user": "test", "password": "test"}]
+  },
+  "databases": [
+    {
+      "name": "TPCH",
+      "type": "mysql",
+      "host": "192.168.200.100",
+      "port": 3306,
+      "database": "tpch",
+      "llm_type": "vllm",
+      "ollama_model": "qwen2.5-coder:32b",
+      "ollama_host": "http://192.168.0.1:11434",
+      "vllm_model": "./models/Qwen2.5-Coder-7B",
+      "vllm_host": "http://192.168.0.1:7000/v1",
+      "vllm_key": "vllm-key",
+      "path": "./env/tpch",
+      "vector_host": "localhost"
+    }
+  ]
+}

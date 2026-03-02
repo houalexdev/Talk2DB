@@ -1,0 +1,8 @@
+/* Roboto Slab font definitions */
+@font-face {
+  font-family: 'Roboto Slab';
+  font-style: normal;
+  font-weight: 350;
+  src: url('./RobotoSlab-Light.ttf') format('truetype');
+  font-display: swap;
+}

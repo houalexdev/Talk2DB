@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en" translate>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./static/images/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 替换为本地字体引用 -->
+    <link href="./static/fonts/roboto-slab/fonts.css" rel="stylesheet">
+    <script src="./static/assets/plotly-latest.min.js" type="text/javascript"></script>
+    <title>Talk2DB</title>
+    <!--<script type="module" crossorigin src="./static/assets/index-35bab439.js"></script>-->
+    <script type="module" crossorigin src="./static/assets/index.js"></script>
+    <!--<link rel="stylesheet" href="./static/assets/index-f228f78f.css">-->
+    <link rel="stylesheet" href="./static/assets/index.css">
+  </head>
+  <body class="bg-white dark:bg-slate-900">
+    <div id="app"></div>
+    
+    <script>
+      // 分页功能增强脚本
+      document.addEventListener('DOMContentLoaded', function() {
+        // 等待主应用加载完成
+        setTimeout(function() {
+          // 保存原始的API调用函数
+          const originalFetch = window.fetch;
+          
+          // 保存当前页码状态
+          let currentPageMap = {};
+          
+          // 重写fetch函数以拦截API调用
+          window.fetch = function(url, options) {
+            // 检查是否是run_sql API调用
+            if (url.includes('/api/v0/run_sql') && (!options || options.method === 'GET')) {
+              // 解析URL参数
+              const urlObj = new URL(url, window.location.origin);
+              const id = urlObj.searchParams.get('id');
+              const existingPage = urlObj.searchParams.get('page');
+              const page = existingPage || currentPageMap[id] || 1;
+              
+              // 更新URL参数
+              urlObj.searchParams.set('page', page);
+              currentPageMap[id] = page;
+              
+              url = urlObj.toString();
+            }
+            
+            // 调用原始fetch函数并确保总是返回response对象
+            return originalFetch(url, options).then(response => {
+              // 克隆响应以便读取内容
+              const clonedResponse = response.clone();
+              
+              // 检查是否是run_sql响应且响应成功
+              if (url.includes('/api/v0/run_sql') && response.ok) {
+                // 异步处理分页数据，不影响原始响应的返回
+                clonedResponse.json().then(data => {
+                  try {
+                    // 处理分页数据
+                    if (data.type === 'df' && data.total_pages && data.total_pages > 1) {
+                      setTimeout(() => {
+                        renderPagination(data);
+                      }, 100);
+                    }
+                  } catch (error) {
+                    console.error('处理分页数据时出错:', error);
+                  }
+                }).catch(error => {
+                  console.error('解析响应JSON时出错:', error);
+                });
+              }
+              
+              // 确保返回原始响应对象
+              return response;
+            });
+          };
+          
+          // 渲染分页控件
+          function renderPagination(data) {
+            try {
+              if (!data.total_rows || !data.total_pages || data.total_pages <= 1) {
+                return;
+              }
+              
+              // 使用更宽松的选择器查找表格容器
+              let tableContainers = [];
+              
+              // 尝试多种选择器
+              const selectors = [
+                '.bg-white.border.border-gray-200.rounded-xl.shadow-sm.overflow-hidden',
+                'table',
+                '[data-type="table"]',
+                '.table-container',
+                '.data-table'
+              ];
+              
+              for (const selector of selectors) {
+                const elements = document.querySelectorAll(selector);
+                if (elements.length > 0) {
+                  tableContainers = Array.from(elements);
+                  break;
+                }
+              }
+              
+              // 如果找不到特定容器，尝试查找最近的表格元素
+              if (tableContainers.length === 0) {
+                const tables = document.querySelectorAll('table');
+                if (tables.length > 0) {
+                  // 查找表格的父容器
+                  tableContainers = Array.from(tables).map(table => {
+                    // 向上查找可能的容器元素
+                    let parent = table.parentNode;
+                    while (parent && parent.tagName !== 'BODY' && parent.childElementCount < 5) {
+                      parent = parent.parentNode;
+                    }
+                    return parent || table;
+                  });
+                }
+              }
+              
+              if (tableContainers.length === 0) {
+                // 如果还是找不到，创建一个简单的分页容器附加到body
+                createStandalonePagination(data);
+                return;
+              }
+              
+              const tableContainer = tableContainers[tableContainers.length - 1];
+              
+              // 移除已存在的分页控件
+              const existingPagination = tableContainer.nextElementSibling;
+              if (existingPagination && existingPagination.classList.contains('pagination-container')) {
+                existingPagination.remove();
+              }
+              
+              // 创建分页容器
+              const paginationContainer = document.createElement('div');
+              paginationContainer.className = 'pagination-container flex justify-between items-center p-4 bg-white border border-t-0 border-gray-200 rounded-b-xl dark:bg-slate-900 dark:border-gray-700';
+              paginationContainer.style.marginTop = '10px';
+              paginationContainer.style.width = '100%';
+              paginationContainer.style.boxSizing = 'border-box';
+              
+              // 创建信息部分
+              const infoDiv = document.createElement('div');
+              infoDiv.className = 'text-sm text-gray-600 dark:text-gray-400';
+              infoDiv.textContent = `显示第 ${(data.current_page - 1) * data.page_size + 1}-${Math.min(data.current_page * data.page_size, data.total_rows)} 条，共 ${data.total_rows} 条记录`;
+              
+              // 创建按钮部分
+              const buttonsDiv = document.createElement('div');
+              buttonsDiv.className = 'flex space-x-2';
+              
+              // 上一页按钮
+              const prevButton = document.createElement('button');
+              prevButton.className = `px-3 py-1 rounded border ${data.current_page > 1 ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200' : 'bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed'}`;
+              prevButton.textContent = '上一页';
+              prevButton.disabled = data.current_page <= 1;
+              prevButton.onclick = function() {
+                if (data.current_page > 1) {
+                  loadPage(data.id, data.current_page - 1);
+                }
+              };
+              
+              // 页码按钮
+              const pageNumbers = getPageNumbers(data.current_page, data.total_pages);
+              pageNumbers.forEach(pageNum => {
+                const button = document.createElement('button');
+                if (pageNum === '...') {
+                  button.className = 'px-3 py-1 rounded border bg-white text-gray-700 border-gray-200 cursor-default dark:bg-slate-900 dark:text-gray-300';
+                  button.disabled = true;
+                } else {
+                  button.className = `px-3 py-1 rounded border ${pageNum === data.current_page ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'} dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-gray-300`;
+                  button.onclick = function() {
+                    loadPage(data.id, pageNum);
+                  };
+                }
+                button.textContent = pageNum;
+                buttonsDiv.appendChild(button);
+              });
+              
+              // 下一页按钮
+              const nextButton = document.createElement('button');
+              nextButton.className = `px-3 py-1 rounded border ${data.current_page < data.total_pages ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200' : 'bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed'}`;
+              nextButton.textContent = '下一页';
+              nextButton.disabled = data.current_page >= data.total_pages;
+              nextButton.onclick = function() {
+                if (data.current_page < data.total_pages) {
+                  loadPage(data.id, data.current_page + 1);
+                }
+              };
+              
+              // 组装分页控件
+              buttonsDiv.appendChild(prevButton);
+              buttonsDiv.appendChild(nextButton);
+              paginationContainer.appendChild(infoDiv);
+              paginationContainer.appendChild(buttonsDiv);
+              
+              // 添加到DOM
+              tableContainer.parentNode.insertBefore(paginationContainer, tableContainer.nextSibling);
+              
+              // 强制显示
+              paginationContainer.style.display = 'flex';
+              paginationContainer.style.visibility = 'visible';
+            } catch (error) {
+              console.error('渲染分页控件时出错:', error);
+            }
+          }
+          
+          // 创建独立的分页控件（当找不到表格容器时）
+          function createStandalonePagination(data) {
+            // 移除已存在的独立分页
+            const existingStandalone = document.getElementById('standalone-pagination');
+            if (existingStandalone) {
+              existingStandalone.remove();
+            }
+            
+            // 创建独立分页容器
+            const standaloneContainer = document.createElement('div');
+            standaloneContainer.id = 'standalone-pagination';
+            standaloneContainer.className = 'pagination-container flex justify-between items-center p-4 bg-white border border-gray-200 rounded-xl dark:bg-slate-900 dark:border-gray-700';
+            standaloneContainer.style.margin = '20px 0';
+            standaloneContainer.style.width = '100%';
+            standaloneContainer.style.boxSizing = 'border-box';
+            standaloneContainer.style.zIndex = '999';
+            
+            // 创建信息部分
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'text-sm text-gray-600 dark:text-gray-400';
+            infoDiv.textContent = `显示第 ${(data.current_page - 1) * data.page_size + 1}-${Math.min(data.current_page * data.page_size, data.total_rows)} 条，共 ${data.total_rows} 条记录`;
+            
+            // 创建按钮部分
+            const buttonsDiv = document.createElement('div');
+            buttonsDiv.className = 'flex space-x-2';
+            
+            // 上一页按钮
+            const prevButton = document.createElement('button');
+            prevButton.className = `px-3 py-1 rounded border ${data.current_page > 1 ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200' : 'bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed'}`;
+            prevButton.textContent = '上一页';
+            prevButton.disabled = data.current_page <= 1;
+            prevButton.onclick = function() {
+              if (data.current_page > 1) {
+                loadPage(data.id, data.current_page - 1);
+              }
+            };
+            
+            // 页码按钮
+            const pageNumbers = getPageNumbers(data.current_page, data.total_pages);
+            pageNumbers.forEach(pageNum => {
+              const button = document.createElement('button');
+              if (pageNum === '...') {
+                button.className = 'px-3 py-1 rounded border bg-white text-gray-700 border-gray-200 cursor-default dark:bg-slate-900 dark:text-gray-300';
+                button.disabled = true;
+              } else {
+                button.className = `px-3 py-1 rounded border ${pageNum === data.current_page ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'} dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-gray-300`;
+                button.onclick = function() {
+                  loadPage(data.id, pageNum);
+                };
+              }
+              button.textContent = pageNum;
+              buttonsDiv.appendChild(button);
+            });
+            
+            // 下一页按钮
+            const nextButton = document.createElement('button');
+            nextButton.className = `px-3 py-1 rounded border ${data.current_page < data.total_pages ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200' : 'bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed'}`;
+            nextButton.textContent = '下一页';
+            nextButton.disabled = data.current_page >= data.total_pages;
+            nextButton.onclick = function() {
+              if (data.current_page < data.total_pages) {
+                loadPage(data.id, data.current_page + 1);
+              }
+            };
+            
+            // 组装分页控件
+            buttonsDiv.appendChild(prevButton);
+            buttonsDiv.appendChild(nextButton);
+            standaloneContainer.appendChild(infoDiv);
+            standaloneContainer.appendChild(buttonsDiv);
+            
+            // 添加到app容器或body
+            const appContainer = document.getElementById('app');
+            if (appContainer) {
+              appContainer.appendChild(standaloneContainer);
+            } else {
+              document.body.appendChild(standaloneContainer);
+            }
+          }
+          
+          // 生成页码列表
+          function getPageNumbers(currentPage, totalPages) {
+            const pageNumbers = [];
+            const maxVisiblePages = 5;
+            
+            if (totalPages <= maxVisiblePages) {
+              for (let i = 1; i <= totalPages; i++) {
+                pageNumbers.push(i);
+              }
+            } else {
+              let startPage = Math.max(1, currentPage - 2);
+              let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+              
+              if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+              }
+              
+              // 添加省略号
+              if (startPage > 1) {
+                pageNumbers.push(1);
+                if (startPage > 2) {
+                  pageNumbers.push('...');
+                }
+              }
+              
+              for (let i = startPage; i <= endPage; i++) {
+                pageNumbers.push(i);
+              }
+              
+              // 添加尾部省略号
+              if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                  pageNumbers.push('...');
+                }
+                pageNumbers.push(totalPages);
+              }
+            }
+            
+            return pageNumbers;
+          }
+          
+          // 加载指定页码
+          function loadPage(id, page) {
+            currentPageMap[id] = page;
+            
+            // 查找现有的表格并显示加载状态
+            const tableContainers = document.querySelectorAll('.bg-white.border.border-gray-200.rounded-xl.shadow-sm.overflow-hidden, table');
+            if (tableContainers.length > 0) {
+              const tableContainer = tableContainers[tableContainers.length - 1];
+              const table = tableContainer.querySelector('table') || tableContainer;
+              const tbody = table.querySelector('tbody');
+              if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="100%" class="px-4 py-3 text-center text-gray-500">加载中...</td></tr>';
+              }
+            }
+            
+            // 使用原始fetch而不是重写后的fetch，避免递归调用
+            originalFetch(`/api/v0/run_sql?id=${id}&page=${page}`)
+              .then(response => {
+                if (!response.ok) {
+                  throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+              })
+              .then(data => {
+                if (data.type === 'df') {
+                  updateTableWithNewData(data);
+                }
+              })
+              .catch(error => {
+                console.error('加载分页数据失败:', error);
+                // 恢复表格显示错误信息
+                if (tableContainers.length > 0) {
+                  const tableContainer = tableContainers[tableContainers.length - 1];
+                  const table = tableContainer.querySelector('table') || tableContainer;
+                  const tbody = table.querySelector('tbody');
+                  if (tbody) {
+                    tbody.innerHTML = `<tr><td colspan="100%" class="px-4 py-3 text-center text-red-500">加载失败: ${error.message}</td></tr>`;
+                  }
+                }
+              });
+          }
+          
+          // 更新表格数据
+          function updateTableWithNewData(data) {
+            try {
+              const tableContainers = document.querySelectorAll('.bg-white.border.border-gray-200.rounded-xl.shadow-sm.overflow-hidden, table');
+              if (tableContainers.length === 0) {
+                return;
+              }
+              
+              const tableContainer = tableContainers[tableContainers.length - 1];
+              const table = tableContainer.querySelector('table') || tableContainer;
+              const tbody = table.querySelector('tbody');
+              const thead = table.querySelector('thead');
+              const headerRow = thead?.querySelector('tr');
+              
+              if (!tbody || !headerRow) {
+                return;
+              }
+              
+              // 获取表头
+              const headers = [];
+              headerRow.querySelectorAll('th').forEach(th => {
+                headers.push(th.textContent.trim());
+              });
+              
+              // 清空表格内容
+              tbody.innerHTML = '';
+              
+              // 解析新数据
+              let rows = [];
+              try {
+                rows = JSON.parse(data.df || '[]');
+              } catch (parseError) {
+                tbody.innerHTML = '<tr><td colspan="100%" class="px-4 py-3 text-center text-red-500">数据解析错误</td></tr>';
+                return;
+              }
+              
+              // 添加新行
+              rows.forEach(row => {
+                const tr = document.createElement('tr');
+                headers.forEach(header => {
+                  const td = document.createElement('td');
+                  td.className = 'px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400';
+                  // 查找对应的值
+                  const value = Object.values(row).find((v, i) => {
+                    const key = Object.keys(row)[i];
+                    return key.toLowerCase() === header.toLowerCase() || 
+                           key.replace(/_/g, ' ').toLowerCase() === header.toLowerCase();
+                  });
+                  td.textContent = value !== undefined ? value : '';
+                  tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+              });
+              
+              // 更新分页控件
+              renderPagination(data);
+            } catch (error) {
+              console.error('更新表格数据时出错:', error);
+            }
+          }
+          
+          // 添加监控DOM变化的功能，确保在表格动态加载后也能添加分页
+          const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+              // 检查是否有表格元素被添加
+              if (mutation.addedNodes.length > 0) {
+                for (let i = 0; i < mutation.addedNodes.length; i++) {
+                  const node = mutation.addedNodes[i];
+                  if (node.nodeType === 1) { // 元素节点
+                    const tables = node.querySelectorAll('table');
+                    if (tables.length > 0) {
+                      // 表格被动态添加，这里可以添加相应的处理逻辑
+                    }
+                  }
+                }
+              }
+            });
+          });
+          
+          // 开始观察DOM变化
+          observer.observe(document.body, {
+            childList: true,
+            subtree: true
+          });
+        }, 1000);
+      });
+    </script>
+  </body>
+</html>

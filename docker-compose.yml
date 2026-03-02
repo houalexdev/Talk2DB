@@ -1,0 +1,29 @@
+services:
+  qdrant:
+    image: qdrant/qdrant
+    container_name: qdrant
+    volumes:
+      - ./qdrant_storage:/qdrant/storage
+    restart: unless-stopped
+    networks:
+      - talk2db
+  datachat: 
+    image: madaibaba/talk2db:5.0
+    container_name: talk2db
+    ports: 
+      - "8084:8084"
+    volumes:
+      - ./env:/app/env
+    environment:
+      - AUTH_TYPE=casdoor
+      - CASDOOR_ENDPOINT=******************************
+      - CASDOOR_CLIENT_ID=******************************
+      - CASDOOR_CLIENT_SECRET=******************************
+    depends_on:
+      - qdrant
+    restart: unless-stopped
+    networks:
+      - talk2db
+networks:
+    talk2db:
+        driver: bridge
